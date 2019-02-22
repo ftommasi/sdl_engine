@@ -1,13 +1,20 @@
 #include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
+
 #include <SDL.h>
+#include <SDL_ttf.h>
+#include <SDL_image.h>
 
 #define SCREEN_WIDTH    1600
 #define SCREEN_HEIGHT   900
 
-#define ACCEL 1
+#define ACCEL 0.3
+#define MAX_ACCEL 1
 
+#define ACCEL_SCALE_DOWN 0.001 
+
+#define ABS(x) x < 0 ? x * -1 : x
 //TODO refactor these structs into separate files and folders in order to clean up
 typedef struct Entity{
     double x;
@@ -40,7 +47,7 @@ typedef struct Entity{
     double depth;
  
     size_t color;
-    SDL_Surface * surface;
+    SDL_Rect * surface;
 }Entity;
 
 
@@ -59,6 +66,7 @@ int main(int argc, char* args[]){
     // INIT
     SDL_Window * win = NULL;
     SDL_Surface * screenSurf = NULL;
+    SDL_Renderer * renderer = NULL;
 
     Entity player;
     player.x=0.0;
@@ -93,20 +101,12 @@ int main(int argc, char* args[]){
     player.surface=NULL;   
 
     SDL_Rect srcrect;
-    SDL_Rect dstrect;
-
-    srcrect.x = 0;
-    srcrect.y = 0;
-    srcrect.w = 32;
-    srcrect.h = 32;
+    player.surface = &srcrect;
+    player.surface->x = 0;
+    player.surface->y = 0;
+    player.surface->w = 32;
+    player.surface->h = 32;
    
-    dstrect.x = 640/2;
-    dstrect.y = 480/2;
-    dstrect.w = 32;
-    dstrect.h = 32;
-
-
-
 
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
     {
@@ -121,12 +121,15 @@ int main(int argc, char* args[]){
         }
         else
         {
+            renderer = SDL_CreateRenderer(win,-1,SDL_RENDERER_ACCELERATED);
             SDL_Event events;
             SDL_PollEvent(&events);
             player.x = SCREEN_WIDTH/2.0;
             player.y = SCREEN_HEIGHT/2.0;
             while(events.type != SDL_QUIT)
             {
+                //UPDATE SECTION
+                
                 #define DEBUG 0
                  //User presses a key
                 if(events.type == SDL_KEYDOWN ) 
@@ -135,42 +138,66 @@ int main(int argc, char* args[]){
                     switch(events.key.keysym.sym ) 
                     { 
                         case SDLK_UP: 
-                            srcrect.y -= ACCEL;
-                            #if DEBUG
-                            printf("up");
-                            #endif
+                            player.y_accel = ABS(player.y_accel) < MAX_ACCEL ? player.y_accel -= ACCEL : -1 * MAX_ACCEL;
                             break; 
                         case SDLK_DOWN: 
-                            srcrect.y += ACCEL;
-                            #if DEBUG
-                            printf("down");
-                            #endif
+                            player.y_accel = ABS(player.y_accel) < MAX_ACCEL ? player.y_accel += ACCEL :  MAX_ACCEL;
                             break;
-                        case SDLK_LEFT: 
-                            #if DEBUG
-                            printf("left");
-                            #endif
-                            srcrect.x -= ACCEL;
+                        case SDLK_LEFT:
+                            player.x_accel = ABS(player.x_accel) < MAX_ACCEL ? player.x_accel -= ACCEL : -1 * MAX_ACCEL;
                             break; 
                         case SDLK_RIGHT:
-                            #if DEBUG
-                            printf("right");
-                            #endif
-                            srcrect.x += ACCEL;
+                            player.x_accel = ABS(player.x_accel) < MAX_ACCEL ? player.x_accel += ACCEL : MAX_ACCEL;
                             break; 
-                        default: 
+                        case SDLK_r:
+                            player.x_accel=0.0;
+                            player.y_accel=0.0;
+                            player.surface->x = 0;
+                            player.surface->y = 0;                        
+                        default:
+                            player.x_accel *= ACCEL_SCALE_DOWN;
+                            player.y_accel *= ACCEL_SCALE_DOWN;
                             break; 
                     }
                 }
+                
+                player.surface->x += player.x_accel;
+                player.surface->y += player.y_accel;
+                
+                //RENDER SECTION
+                const size_t buffersize = 50;
+                char debug_string [buffersize*4];
+
+                sprintf(debug_string, "x:  %f\n",player.surface->x);
+                sprintf(debug_string, "y:  %f\n",player.surface->y);
+                sprintf(debug_string, "dx: %f\n",player.x_accel);
+                sprintf(debug_string, "dy: %f\n",player.y_accel);
+
+                TTF_Font * Sans = TTF_OpenFont("Sans.ttf",24);
+                SDL_Color White = {0xFF,0xFF,0xFF};
+
+                SDL_Surface * sur_msg = TTF_RenderText_Solid(Sans,debug_string,White); 
+                SDL_Texture * Message = SDL_CreateTextureFromSurface(renderer,sur_msg);
+
+                SDL_Rect msg_rct;
+
+                msg_rct.x = SCREEN_WIDTH - 210;
+                msg_rct.y = SCREEN_HEIGHT + 10;
+                msg_rct.w = SCREEN_WIDTH - 10;
+                msg_rct.h = SCREEN_HEIGHT + 210;
+
+                SDL_RenderCopy(renderer,Message,NULL,&msg_rct);
+                
                 screenSurf = SDL_GetWindowSurface(win);
                 SDL_FillRect(screenSurf,NULL,SDL_MapRGB(screenSurf->format,0xAA,0xBB,0xDD));
-                SDL_FillRect(screenSurf,&srcrect,SDL_MapRGB(screenSurf->format,0xFF,0x00,0x00));
+                SDL_FillRect(screenSurf,player.surface,SDL_MapRGB(screenSurf->format,0xFF,0x00,0x00));
                 SDL_UpdateWindowSurface(win);
                 SDL_PollEvent(&events);
             }
             
         }
     }
+    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(win);
     SDL_Quit();
     return 0; //dork    

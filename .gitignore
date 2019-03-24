@@ -1,2 +1,5 @@
 prototyping/*
 *.dll
+*.tff
+*.exe
+*.txt

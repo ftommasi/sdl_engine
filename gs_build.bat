@@ -1,0 +1,1 @@
+g++ -o getting_started.exe getting_started.cpp -lmingw32 -lSDL2main -lSDL2_ttf -lSDL2

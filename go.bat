@@ -1,0 +1,2 @@
+call build_fps_engine.bat
+call run_after_build.bat

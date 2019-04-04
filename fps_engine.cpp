@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdlib.h>
-#include <stdio.h>
+#include <string>
+#include <vector>
 
 #include <SDL.h>
 #include <SDL_ttf.h>
@@ -68,10 +69,12 @@ int main(int argc, char* args[]){
     SDL_Surface * screenSurf = NULL;
     SDL_Renderer * renderer = NULL;
 
+    //bool my_varrender_console = false;
+
     Entity player;
-    player.x=0.0;
-    player.y=0.0;
-    player.z=0.0;
+    player.x=10.0;
+    player.y=10.0;
+    player.z=10.0;
    
     player.x_vel=0.0;
     player.y_vel=0.0;
@@ -102,12 +105,19 @@ int main(int argc, char* args[]){
 
     SDL_Rect srcrect;
     player.surface = &srcrect;
-    player.surface->x = 0;
-    player.surface->y = 0;
-    player.surface->w = 32;
-    player.surface->h = 32;
-   
+    player.surface->x = 10;
+    player.surface->y = 10;
+    player.surface->w = 132;
+    player.surface->h = 132;
+    
+    SDL_Rect console_area = { 0,0,SCREEN_WIDTH, ((SCREEN_HEIGHT) - (SCREEN_HEIGHT >> 2))  };
 
+    bool display_player_console = false;
+    bool time_to_quit = false;
+
+
+    //static std::vector<std::string> console_strings;
+    
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         printf("err @ SDL Init");
@@ -128,13 +138,13 @@ int main(int argc, char* args[]){
             SDL_PollEvent(&events);
             player.x = SCREEN_WIDTH/2.0;
             player.y = SCREEN_HEIGHT/2.0;
-
+            
             if(TTF_Init() == -1)
             {
                 exit(-1);
             }
-
-            while(events.type != SDL_QUIT)
+            
+            while(events.type != SDL_QUIT && !time_to_quit)
             {
                 //UPDATE SECTION
                 
@@ -162,7 +172,14 @@ int main(int argc, char* args[]){
                             player.x_accel=0.0;
                             player.y_accel=0.0;
                             player.surface->x = 0;
-                            player.surface->y = 0;                        
+                            player.surface->y = 0;                       
+                            break; 
+                        case SDLK_q:
+                            time_to_quit = true;
+                            break;
+                        case SDLK_p:
+                            display_player_console = !display_player_console;
+                            break;
                         default:
                             break; 
                     }
@@ -177,8 +194,7 @@ int main(int argc, char* args[]){
                 //RENDER SECTION
                 const size_t buffersize = 50;
                 char debug_string [buffersize*4];
-                char* test = "TESTING THIS 123.123";
-                sprintf(debug_string, "x:  %f\ny:  %f\ndx: %f\ndy: %f\n",player.surface->x, player.surface->y, player.x_accel, player.y_accel);
+                sprintf(debug_string, "x:  %f\ny:  %f\ndx: %f\ndy: %f\n console: %d",player.surface->x, player.surface->y, player.x_accel, player.y_accel,display_player_console);
                 TTF_Font * Sans = TTF_OpenFont("arial.ttf",24);
                 SDL_Color White = {0xFF,0x00,0xFF};
                 if(Sans == NULL) exit(-1);
@@ -215,6 +231,14 @@ int main(int argc, char* args[]){
                 SDL_SetRenderDrawColor(renderer,0xFF,0x00,0x00,0xFF);
                 SDL_RenderFillRect(renderer,player.surface);//,SDL_MapRGB(screenSurf->format,0xFF,0x00,0x00));
                 SDL_RenderCopy(renderer,Message,&msg_rct,&dst_rct);
+
+                //if our console flag is up display it
+                if(display_player_console){
+                    SDL_SetRenderDrawBlendMode(renderer,SDL_BLENDMODE_BLEND);
+                    SDL_SetRenderDrawColor(renderer,0x0C,0x0C,0x0C,0xAA);
+                    SDL_RenderFillRect(renderer,&console_area);//,SDL_MapRGB(screenSurf->format,0xFF,0x00,0x00));
+                    //sprintf(debug_string, "x:  %f\ny:  %f\ndx: %f\ndy: %f\n console: %d",player.surface->x, player.surface->y, player.x_accel, player.y_accel,display_player_console);
+                }
                 SDL_RenderPresent(renderer);
                 SDL_PollEvent(&events);
             }

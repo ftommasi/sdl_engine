@@ -1,4 +1,7 @@
 prototyping/*
+*vscode
+.vscode*
+.vscode/*
 *.dll
 *.tff
 *.exe

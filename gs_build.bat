@@ -1,1 +1,1 @@
-g++ -o getting_started.exe getting_started.cpp -lmingw32 -lSDL2main -lSDL2_ttf -lSDL2
+g++ -o getting_started.exe getting_started.cpp  -IC:\mingw_dev_lib\include\SDL2 -LC:\mingw_dev_lib\lib -lmingw32 -lSDL2main -lSDL2_ttf -lSDL2
